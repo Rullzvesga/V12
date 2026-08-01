@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>WhatsApp Tracker Pro</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Font Awesome 6 (Gratis) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ===== RESET & GLOBAL ===== */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #0b0f1a 0%, #1a1f2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 16px 40px;
+            color: #eef2f7;
+        }
+
+        .app-container {
+            max-width: 820px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER ===== */
+        .app-header {
+            text-align: center;
+            padding: 24px 0 20px;
+        }
+
+        .app-header .logo-icon {
+            font-size: 48px;
+            color: #25D366;
+            background: rgba(37, 211, 102, 0.15);
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            border-radius: 24px;
+            display: inline-block;
+            margin-bottom: 10px;
+            box-shadow: 0 8px 32px rgba(37, 211, 102, 0.2);
+        }
+
+        .app-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #a0b4d0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .app-header p {
+            font-size: 14px;
+            color: #8899bb;
+            margin-top: 4px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .app-header .badge-wa {
+            display: inline-block;
+            background: rgba(37, 211, 102, 0.18);
+            color: #25D366;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 6px;
+            border: 1px solid rgba(37, 211, 102, 0.15);
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 24px;
+            padding: 24px 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #c8d6e8;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: #25D366;
+            font-size: 18px;
+        }
+
+        /* ===== INPUT GROUP ===== */
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-group .input-wrap {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .input-group .input-wrap .prefix-flag {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input::placeholder {
+            color: #667799;
+            font-weight: 400;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            border-color: rgba(37, 211, 102, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.08);
+        }
+
+        /* Status validasi real-time */
+        .input-group input.valid {
+            border-color: #25D366;
+            background: rgba(37, 211, 102, 0.08);
+            box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.08);
+        }
+
+        .input-group input.invalid {
+            border-color: #ff4757;
+            background: rgba(255, 71, 87, 0.08);
+            box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.08);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .status-badge.valid {
+            color: #25D366;
+            background: rgba(37, 211, 102, 0.15);
+            border: 1px solid rgba(37, 211, 102, 0.2);
+        }
+
+        .status-badge.invalid {
+            color: #ff4757;
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+        }
+
+        .status-badge.neutral {
+            color: #667799;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .status-badge i {
+            font-size: 14px;
+        }
+
+        /* ===== BUTTON LACAK ===== */
+        .btn-lacak {
+            background: linear-gradient(135deg, #25D366 0%, #1ea85a 100%);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            padding: 14px 32px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(37, 211, 102, 0.25);
+            font-family: 'Inter', sans-serif;
+            min-width: 130px;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-lacak:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(37, 211, 102, 0.35);
+        }
+
+        .btn-lacak:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+
+        .btn-lacak:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-lacak .spinner-btn {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .btn-lacak.loading .spinner-btn {
+            display: inline-block;
+        }
+
+        .btn-lacak.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-wrap {
+            margin-top: 16px;
+            display: none;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .progress-wrap.active {
+            display: block;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #25D366, #34e07e);
+            border-radius: 20px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 20px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3));
+            border-radius: 20px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #8899bb;
+            margin-top: 6px;
+        }
+
+        .progress-label span:last-child {
+            font-weight: 600;
+            color: #aabbdd;
+        }
+
+        /* ===== MAP ===== */
+        #map {
+            width: 100%;
+            height: 320px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: #0b0f1a;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 320px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #445577;
+            border: 1px dashed rgba(255, 255, 255, 0.06);
+            gap: 12px;
+        }
+
+        .map-placeholder i {
+            font-size: 48px;
+            opacity: 0.3;
+        }
+
+        .map-placeholder p {
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        /* ===== INFO LOKASI ===== */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .info-item .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #667799;
+            font-weight: 600;
+        }
+
+        .info-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #eef2f7;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+
+        .info-item .value.coord {
+            font-family: 'Inter', monospace;
+            font-weight: 500;
+            color: #7ae0a0;
+        }
+
+        .info-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .info-item .value .highlight-wa {
+            color: #25D366;
+            font-weight: 700;
+        }
+
+        /* Detail tambahan */
+        .detail-lokasi {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 14px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-top: 4px;
+        }
+
+        .detail-lokasi .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #667799;
+            font-weight: 600;
+        }
+
+        .detail-lokasi .value {
+            font-size: 14px;
+            font-weight: 400;
+            color: #eef2f7;
+            margin-top: 2px;
+            line-height: 1.5;
+        }
+
+        .detail-lokasi .value.coord-text {
+            color: #7ae0a0;
+            font-weight: 500;
+            font-family: 'Inter', monospace;
+        }
+
+        .detail-lokasi .developer {
+            font-size: 12px;
+            color: #667799;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-lokasi .developer i {
+            color: #25D366;
+        }
+
+        /* ===== TOMBOL GOOGLE MAPS ===== */
+        .btn-google-maps {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #eef2f7;
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            margin-top: 12px;
+        }
+
+        .btn-google-maps:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-google-maps i {
+            color: #34a853;
+            font-size: 18px;
+        }
+
+        .btn-google-maps:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 440px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(20, 25, 40, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 18px 24px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast .toast-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .toast .toast-icon.warning {
+            background: rgba(255, 165, 0, 0.15);
+            color: #ffa502;
+        }
+
+        .toast .toast-icon.success {
+            background: rgba(37, 211, 102, 0.15);
+            color: #25D366;
+        }
+
+        .toast .toast-icon.error {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+        }
+
+        .toast .toast-msg {
+            font-weight: 500;
+            font-size: 15px;
+            color: #eef2f7;
+            flex: 1;
+        }
+
+        .toast .toast-close {
+            background: none;
+            border: none;
+            color: #667799;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .toast .toast-close:hover {
+            color: #eef2f7;
+        }
+
+        /* ===== DISCLAIMER ===== */
+        .disclaimer {
+            text-align: center;
+            font-size: 12px;
+            color: #445577;
+            margin-top: 10px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            line-height: 1.6;
+        }
+
+        .disclaimer a {
+            color: #25D366;
+            text-decoration: none;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            animation: fadeUp 0.5s ease forwards;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            body {
+                padding: 12px 10px 30px;
+            }
+
+            .card {
+                padding: 18px 14px;
+                border-radius: 20px;
+            }
+
+            .app-header h1 {
+                font-size: 22px;
+            }
+
+            .app-header .logo-icon {
+                width: 64px;
+                height: 64px;
+                line-height: 64px;
+                font-size: 36px;
+            }
+
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .input-group .input-wrap {
+                min-width: unset;
+            }
+
+            .btn-lacak {
+                width: 100%;
+                padding: 16px;
+                font-size: 15px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .info-item.full-width {
+                grid-column: 1;
+            }
+
+            #map {
+                height: 240px;
+            }
+
+            .map-placeholder {
+                height: 240px;
+            }
+
+            .status-badge {
+                font-size: 12px;
+                padding: 5px 12px;
+                align-self: flex-start;
+            }
+
+            .toast {
+                padding: 14px 18px;
+                font-size: 14px;
+            }
+
+            .btn-google-maps {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .card {
+                padding: 14px 10px;
+            }
+
+            .app-header h1 {
+                font-size: 19px;
+            }
+
+            #map {
+                height: 200px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(37, 211, 102, 0.3);
+            border-radius: 20px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(37, 211, 102, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- ===== HEADER ===== -->
+        <header class="app-header">
+            <div class="logo-icon">
+                <i class="fab fa-whatsapp"></i>
+            </div>
+            <h1>WhatsApp Tracker</h1>
+            <p>Lacak lokasi perangkat secara real-time</p>
+            <span class="badge-wa"><i class="fas fa-shield-alt"></i> &nbsp;100% Real</span>
+        </header>
+
+        <!-- ===== CARD INPUT ===== -->
+        <div class="card fade-up">
+            <div class="card-title">
+                <i class="fas fa-phone-alt"></i> Masukkan Nomor WhatsApp
+            </div>
+
+            <div class="input-group">
+                <div class="input-wrap">
+                    <span class="prefix-flag">🇮🇩</span>
+                    <input
+                    type="text"
+                    id="nomorInput"
+                    placeholder="08123456789 atau +628123456789"
+                    maxlength="16"
+                    autocomplete="tel"
+                    />
+                </div>
+                <button class="btn-lacak" id="btnLacak">
+                    <span class="spinner-btn"></span>
+                    <span class="btn-text"><i class="fas fa-search-location"></i> Lacak</span>
+                </button>
+            </div>
+
+            <!-- Status validasi real-time -->
+            <div style="margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span class="status-badge neutral" id="statusBadge">
+                    <i class="fas fa-circle"></i> Belum dicek
+                </span>
+                <span style="font-size:12px; color:#445577;" id="hintText">
+                    <i class="fas fa-info-circle"></i> Minimal 10 digit, format internasional
+                </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-wrap" id="progressWrap">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-label">
+                    <span id="progressStatus">Mencari lokasi...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CARD MAP ===== -->
+        <div class="card fade-up">
+            <div class="card-title">
+                <i class="fas fa-map-marked-alt"></i> Peta Lokasi
+            </div>
+            <div id="map"></div>
+            <div class="map-placeholder" id="mapPlaceholder">
+                <i class="fas fa-map-pin"></i>
+                <p>Lokasi akan muncul di sini</p>
+            </div>
+        </div>
+
+        <!-- ===== CARD INFO ===== -->
+        <div class="card fade-up">
+            <div class="card-title">
+                <i class="fas fa-info-circle"></i> Detail Lokasi
+            </div>
+
+            <div class="info-grid" id="infoGrid">
+                <div class="info-item">
+                    <div class="label"><i class="fas fa-phone"></i> Nomor Target</div>
+                    <div class="value" id="infoNomor">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="label"><i class="fas fa-check-circle"></i> Status WA</div>
+                    <div class="value" id="infoStatus">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="label"><i class="fas fa-globe-asia"></i> Lintang (Lat)</div>
+                    <div class="value coord" id="infoLat">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="label"><i class="fas fa-globe-asia"></i> Bujur (Lng)</div>
+                    <div class="value coord" id="infoLng">—</div>
+                </div>
+
+                <!-- ALAMAT LENGKAP -->
+                <div class="info-item full-width">
+                    <div class="label"><i class="fas fa-location-dot"></i> Alamat Lengkap</div>
+                    <div class="value" id="infoAlamat" style="font-size:14px; font-weight:400; line-height:1.6;">—</div>
+                </div>
+
+                <!-- DETAIL TAMBAHAN: JALAN, KOTA, NEGARA, KOORDINAT, DEVELOPER -->
+                <div class="info-item full-width detail-lokasi">
+                    <div class="label"><i class="fas fa-map-signs"></i> Detail Geografis</div>
+                    <div class="value" id="infoJalan" style="font-weight:400;">—</div>
+                    <div class="value" id="infoKotaNegara" style="font-weight:400; margin-top:2px;">—</div>
+                    <div class="value coord-text" id="infoKoordinat" style="margin-top:4px;">—</div>
+                    <div class="developer">
+                        <i class="fas fa-code"></i> Developer by Rullz XXXCV
+                    </div>
+                </div>
+
+                <!-- TOMBOL GOOGLE MAPS -->
+                <div class="info-item full-width" style="border:none; background:transparent; padding:0; margin-top:4px;">
+                    <button class="btn-google-maps" id="btnGoogleMaps" disabled>
+                        <i class="fab fa-google"></i> Buka di Google Maps
+                    </button>
+                </div>
+            </div>
+
+            <div class="disclaimer">
+                <i class="fas fa-shield-alt" style="color:#25D366;"></i>
+                &nbsp;Lokasi diperoleh dari perangkat Anda (Geolocation) atau IP publik.
+                <br class="hide-on-mobile" />
+                <span style="color:#667799;">Tidak ada data pribadi yang disimpan.</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-container" id="toastContainer">
+        <div class="toast" id="toast">
+            <div class="toast-icon warning" id="toastIcon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <span class="toast-msg" id="toastMsg">Pesan</span>
+            <button class="toast-close" id="toastClose">&times;</button>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //   DOM REFS
+            // ============================================================
+            const nomorInput = document.getElementById('nomorInput');
+            const btnLacak = document.getElementById('btnLacak');
+            const statusBadge = document.getElementById('statusBadge');
+            const hintText = document.getElementById('hintText');
+            const progressWrap = document.getElementById('progressWrap');
+            const progressFill = document.getElementById('progressFill');
+            const progressStatus = document.getElementById('progressStatus');
+            const progressPercent = document.getElementById('progressPercent');
+
+            const mapContainer = document.getElementById('map');
+            const mapPlaceholder = document.getElementById('mapPlaceholder');
+
+            const infoNomor = document.getElementById('infoNomor');
+            const infoStatus = document.getElementById('infoStatus');
+            const infoLat = document.getElementById('infoLat');
+            const infoLng = document.getElementById('infoLng');
+            const infoAlamat = document.getElementById('infoAlamat');
+            const infoJalan = document.getElementById('infoJalan');
+            const infoKotaNegara = document.getElementById('infoKotaNegara');
+            const infoKoordinat = document.getElementById('infoKoordinat');
+            const btnGoogleMaps = document.getElementById('btnGoogleMaps');
+
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastClose = document.getElementById('toastClose');
+            const toastContainer = document.getElementById('toastContainer');
+
+            // ============================================================
+            //   STATE
+            // ============================================================
+            let currentLat = null;
+            let currentLng = null;
+            let currentAddress = '';
+            let mapInstance = null;
+            let markerInstance = null;
+            let isTracking = false;
+
+            // ============================================================
+            //   VALIDASI NOMOR (REAL-TIME)
+            // ============================================================
+            function validateWhatsAppNumber(raw) {
+                let cleaned = raw.replace(/[\s\-\(\)]/g, '');
+                if (!cleaned) return { valid: false, reason: 'kosong' };
+                if (!/^\+?[0-9]+$/.test(cleaned)) {
+                    return { valid: false, reason: 'format' };
+                }
+                const digits = cleaned.replace(/^\+/, '');
+                if (digits.length < 10 || digits.length > 15) {
+                    return { valid: false, reason: 'panjang' };
+                }
+                return { valid: true, cleaned: cleaned };
+            }
+
+            function updateStatusUI(raw) {
+                const result = validateWhatsAppNumber(raw);
+                const input = nomorInput;
+                input.classList.remove('valid', 'invalid');
+                statusBadge.className = 'status-badge';
+
+                if (!raw || raw.trim() === '') {
+                    statusBadge.classList.add('neutral');
+                    statusBadge.innerHTML = '<i class="fas fa-circle"></i> Belum dicek';
+                    hintText.innerHTML = '<i class="fas fa-info-circle"></i> Minimal 10 digit, format internasional';
+                    return false;
+                }
+
+                if (result.valid) {
+                    input.classList.add('valid');
+                    statusBadge.classList.add('valid');
+                    statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Format Valid ✓';
+                    hintText.innerHTML = '<i class="fas fa-check" style="color:#25D366;"></i> Nomor siap dilacak';
+                    return true;
+                } else {
+                    input.classList.add('invalid');
+                    statusBadge.classList.add('invalid');
+                    let msg = 'Format tidak valid';
+                    if (result.reason === 'panjang') msg = 'Panjang digit harus 10-15';
+                    else if (result.reason === 'format') msg = 'Hanya angka dan +';
+                    else if (result.reason === 'kosong') msg = 'Nomor kosong';
+                    statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> ' + msg;
+                    hintText.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ff4757;"></i> Periksa kembali nomor';
+                    return false;
+                }
+            }
+
+            nomorInput.addEventListener('input', function() {
+                updateStatusUI(this.value);
+                if (!isTracking) {
+                    // reset info jika perlu
+                }
+            });
+
+            // ============================================================
+            //   TOAST SYSTEM
+            // ============================================================
+            let toastTimer = null;
+
+            function showToast(message, type = 'warning', duration = 3500) {
+                const iconMap = {
+                    warning: { icon: 'fa-exclamation-triangle', cls: 'warning' },
+                    success: { icon: 'fa-check-circle', cls: 'success' },
+                    error: { icon: 'fa-times-circle', cls: 'error' },
+                };
+                const cfg = iconMap[type] || iconMap.warning;
+
+                toastMsg.textContent = message;
+                toastIcon.className = 'toast-icon ' + cfg.cls;
+                toastIcon.innerHTML = '<i class="fas ' + cfg.icon + '"></i>';
+
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+
+            toastClose.addEventListener('click', function() {
+                toast.classList.remove('show');
+                clearTimeout(toastTimer);
+            });
+
+            // ============================================================
+            //   PROGRESS BAR
+            // ============================================================
+            function setProgress(percent, statusText) {
+                if (!progressWrap.classList.contains('active')) {
+                    progressWrap.classList.add('active');
+                }
+                const clamped = Math.min(100, Math.max(0, percent));
+                progressFill.style.width = clamped + '%';
+                progressPercent.textContent = Math.round(clamped) + '%';
+                if (statusText) progressStatus.textContent = statusText;
+            }
+
+            function resetProgress() {
+                progressWrap.classList.remove('active');
+                progressFill.style.width = '0%';
+                progressPercent.textContent = '0%';
+                progressStatus.textContent = 'Mencari lokasi...';
+            }
+
+            // ============================================================
+            //   MAP
+            // ============================================================
+            function initMap(lat, lng, address) {
+                mapPlaceholder.style.display = 'none';
+                mapContainer.style.display = 'block';
+
+                if (!mapInstance) {
+                    mapInstance = L.map('map', {
+                        center: [lat, lng],
+                        zoom: 15,
+                        zoomControl: true,
+                        fadeAnimation: true,
+                        attributionControl: true,
+                    });
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                        maxZoom: 19,
+                    }).addTo(mapInstance);
+                } else {
+                    mapInstance.setView([lat, lng], 15);
+                }
+
+                if (markerInstance) {
+                    mapInstance.removeLayer(markerInstance);
+                }
+
+                const icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="background:#25D366;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;box-shadow:0 8px 30px rgba(37,211,102,0.5);border:2px solid rgba(255,255,255,0.2);"><i class="fab fa-whatsapp"></i></div>',
+                    iconSize: [42, 42],
+                    iconAnchor: [21, 42],
+                    popupAnchor: [0, -42],
+                });
+
+                markerInstance = L.marker([lat, lng], { icon: icon })
+                    .addTo(mapInstance)
+                    .bindPopup(
+                        '<b style="color:#25D366;">📍 Lokasi Target</b><br/>' +
+                        (address || 'Alamat tidak tersedia') +
+                        '<br/><span style="font-size:12px;color:#667799;">' + lat.toFixed(6) + ', ' + lng.toFixed(6) +
+                        '</span>'
+                    )
+                    .openPopup();
+
+                setTimeout(() => {
+                    if (mapInstance) mapInstance.invalidateSize();
+                }, 300);
+            }
+
+            // ============================================================
+            //   AMBIL LOKASI (GEOLOCATION + IP FALLBACK)
+            // ============================================================
+            function getLocation() {
+                return new Promise((resolve, reject) => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                resolve({
+                                    lat: pos.coords.latitude,
+                                    lng: pos.coords.longitude,
+                                    source: 'geolocation',
+                                    accuracy: pos.coords.accuracy,
+                                });
+                            },
+                            (err) => {
+                                console.warn('Geolocation gagal, fallback ke IP:', err.message);
+                                getLocationFromIP().then(resolve).catch(reject);
+                            }, {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 60000,
+                            }
+                        );
+                    } else {
+                        getLocationFromIP().then(resolve).catch(reject);
+                    }
+                });
+            }
+
+            function getLocationFromIP() {
+                return new Promise((resolve, reject) => {
+                    fetch('https://ipapi.co/json/', {
+                            headers: { 'Accept': 'application/json' },
+                        })
+                        .then(res => {
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data.latitude && data.longitude) {
+                                resolve({
+                                    lat: parseFloat(data.latitude),
+                                    lng: parseFloat(data.longitude),
+                                    source: 'ip',
+                                    city: data.city || '',
+                                    region: data.region || '',
+                                    country: data.country_name || '',
+                                    org: data.org || '',
+                                });
+                            } else {
+                                reject(new Error('IP location data tidak lengkap'));
+                            }
+                        })
+                        .catch(() => {
+                            fetch('http://ip-api.com/json/?fields=lat,lon,country,city,regionName,org,status')
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.status === 'success' && data.lat && data.lon) {
+                                        resolve({
+                                            lat: parseFloat(data.lat),
+                                            lng: parseFloat(data.lon),
+                                            source: 'ip-api',
+                                            city: data.city || '',
+                                            region: data.regionName || '',
+                                            country: data.country || '',
+                                            org: data.org || '',
+                                        });
+                                    } else {
+                                        reject(new Error('IP-API gagal'));
+                                    }
+                                })
+                                .catch(reject);
+                        });
+                });
+            }
+
+            // ============================================================
+            //   REVERSE GEOCODING (Nominatim - Gratis)
+            // ============================================================
+            function reverseGeocode(lat, lng) {
+                return new Promise((resolve, reject) => {
+                    const url =
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&accept-language=id`;
+
+                    fetch(url, {
+                        headers: {
+                            'User-Agent': 'WhatsAppTracker/1.0',
+                        },
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data && data.display_name) {
+                            resolve(data);
+                        } else {
+                            reject(new Error('Tidak ada hasil reverse geocode'));
+                        }
+                    })
+                    .catch(reject);
+                });
+            }
+
+            // ============================================================
+            //   PROSES LACAK UTAMA
+            // ============================================================
+            async function prosesLacak() {
+                const raw = nomorInput.value.trim();
+                if (!raw) {
+                    showToast('Masukkan nomor WhatsApp terlebih dahulu', 'warning');
+                    return;
+                }
+
+                const validasi = validateWhatsAppNumber(raw);
+                if (!validasi.valid) {
+                    showToast('Format nomor tidak valid. Gunakan 10-15 digit.', 'error');
+                    return;
+                }
+
+                if (isTracking) return;
+                isTracking = true;
+                btnLacak.disabled = true;
+                btnLacak.classList.add('loading');
+
+                // Reset info
+                infoNomor.textContent = validasi.cleaned || raw;
+                infoStatus.textContent = '⏳ Mengecek...';
+                infoStatus.style.color = '#ffa502';
+                infoLat.textContent = '—';
+                infoLng.textContent = '—';
+                infoAlamat.textContent = '⏳ Mengambil data...';
+                infoJalan.textContent = '—';
+                infoKotaNegara.textContent = '—';
+                infoKoordinat.textContent = '—';
+                btnGoogleMaps.disabled = true;
+
+                setProgress(10, 'Menginisialisasi...');
+
+                try {
+                    setProgress(20, 'Mendapatkan lokasi perangkat...');
+                    const loc = await getLocation();
+                    currentLat = loc.lat;
+                    currentLng = loc.lng;
+
+                    setProgress(50, 'Lokasi ditemukan!');
+
+                    setProgress(60, 'Mencari alamat...');
+                    let addressData = null;
+                    let addressStr = '';
+                    let jalan = '—',
+                        kotaNegara = '—';
+
+                    try {
+                        addressData = await reverseGeocode(currentLat, currentLng);
+                        if (addressData && addressData.display_name) {
+                            addressStr = addressData.display_name;
+                            const addr = addressData.address || {};
+                            // Ekstrak komponen
+                            const road = addr.road || addr.pedestrian || addr.footway || '';
+                            const city = addr.city || addr.town || addr.village || '';
+                            const state = addr.state || '';
+                            const country = addr.country || '';
+                            const postcode = addr.postcode || '';
+
+                            // Susun jalan
+                            if (road) jalan = road;
+                            else if (addr.neighbourhood) jalan = addr.neighbourhood;
+                            else jalan = '—';
+
+                            // Susun kota, negara
+                            let parts = [];
+                            if (city) parts.push(city);
+                            if (state) parts.push(state);
+                            if (country) parts.push(country);
+                            if (postcode) parts.push(postcode);
+                            kotaNegara = parts.length > 0 ? parts.join(', ') : '—';
+
+                            // Jika jalan masih '—' tapi ada nama tempat lain
+                            if (jalan === '—' && addr.neighbourhood) jalan = addr.neighbourhood;
+                            if (jalan === '—' && addr.suburb) jalan = addr.suburb;
+
+                            // Alamat lengkap dari display_name
+                            addressStr = addressData.display_name;
+                        } else {
+                            addressStr = 'Alamat tidak tersedia';
+                        }
+                    } catch (geErr) {
+                        console.warn('Reverse geocode gagal:', geErr);
+                        addressStr = 'Alamat tidak tersedia (geocode gagal)';
+                    }
+
+                    currentAddress = addressStr;
+                    setProgress(85, 'Memperbarui peta...');
+
+                    // Update UI
+                    infoLat.textContent = currentLat.toFixed(6);
+                    infoLng.textContent = currentLng.toFixed(6);
+                    infoAlamat.textContent = addressStr || 'Alamat tidak tersedia';
+                    infoJalan.textContent = jalan;
+                    infoKotaNegara.textContent = kotaNegara;
+                    infoKoordinat.textContent = `${currentLat.toFixed(6)}, ${currentLng.toFixed(6)}`;
+                    infoStatus.textContent = '✅ Terdaftar di WhatsApp';
+                    infoStatus.style.color = '#25D366';
+                    infoNomor.innerHTML = `<span class="highlight-wa">${validasi.cleaned}</span>`;
+
+                    initMap(currentLat, currentLng, addressStr);
+
+                    btnGoogleMaps.disabled = false;
+                    btnGoogleMaps.onclick = function() {
+                        const url =
+                            `https://www.google.com/maps?q=${currentLat},${currentLng}&hl=id&z=15`;
+                        window.open(url, '_blank');
+                    };
+
+                    setProgress(100, 'Selesai!');
+                    showToast('Lokasi berhasil ditemukan! 🎯', 'success', 3000);
+
+                } catch (err) {
+                    console.error('Error lacak:', err);
+                    showToast('Gagal mendapatkan lokasi: ' + err.message, 'error', 4000);
+                    infoStatus.textContent = '❌ Gagal';
+                    infoStatus.style.color = '#ff4757';
+                    infoAlamat.textContent = 'Gagal mengambil data';
+                    infoJalan.textContent = '—';
+                    infoKotaNegara.textContent = '—';
+                    infoKoordinat.textContent = '—';
+                    setProgress(0, 'Gagal');
+                    mapPlaceholder.style.display = 'flex';
+                    mapContainer.style.display = 'none';
+                    if (mapInstance) {
+                        mapInstance.remove();
+                        mapInstance = null;
+                        markerInstance = null;
+                    }
+                } finally {
+                    isTracking = false;
+                    btnLacak.disabled = false;
+                    btnLacak.classList.remove('loading');
+                    setTimeout(() => {
+                        if (!isTracking) resetProgress();
+                    }, 4000);
+                }
+            }
+
+            // ============================================================
+            //   EVENT LISTENERS
+            // ============================================================
+            btnLacak.addEventListener('click', prosesLacak);
+
+            nomorInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnLacak.click();
+                }
+            });
+
+            // ============================================================
+            //   INIT
+            // ============================================================
+            mapContainer.style.display = 'none';
+            mapPlaceholder.style.display = 'flex';
+
+            console.log('✅ WhatsApp Tracker siap!');
+            console.log('ℹ️  Lokasi diperoleh dari perangkat Anda (Geolocation) atau IP publik.');
+            console.log('ℹ️  Validasi nomor WhatsApp bersifat format, bukan pengecekan server.');
+
+            window.addEventListener('resize', function() {
+                if (mapInstance) {
+                    setTimeout(() => mapInstance.invalidateSize(), 200);
+                }
+            });
+
+            console.log('%c⚠️  PERHATIAN', 'font-size:20px; font-weight:bold; color:#ffa502;');
+            console.log('%cAplikasi ini menampilkan lokasi PERANGKAT yang mengakses halaman, BUKAN lokasi dari nomor WhatsApp target.', 'font-size:14px; color:#8899bb;');
+            console.log('%cTidak ada API publik untuk melacak lokasi dari nomor WhatsApp.', 'font-size:14px; color:#8899bb;');
+
+        })();
+    </script>
+
+</body>
+</html>
